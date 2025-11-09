@@ -1,0 +1,133 @@
+local GameId = game.PlaceId
+
+if GameId == 15694107053 then
+    -- JUJUTSU LEGACY: LOAD FULL SCRIPT
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/asdfgerf51234-hub/testinfg/refs/heads/main/source'))()
+else
+    -- OTHER GAME: AUTO RAID MENU
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+    local Window = Rayfield:CreateWindow({
+        Name = "Auto Raid",
+        LoadingTitle = "Loading...",
+        LoadingSubtitle = "",
+        ConfigurationSaving = { Enabled = false },
+        KeySystem = false
+    })
+    
+    local Tab = Window:CreateTab("Main")
+    
+    local active = false
+    local thread = nil
+    local speedOn = false
+    local speedVal = 50
+    
+    local function fireTojiAura()
+        local Remote = nil
+        pcall(function()
+            local folder = game.ReplicatedStorage:FindFirstChild("RemoteEvent") or game.ReplicatedStorage:FindFirstChild("Ability")
+            if not folder then
+                for _, n in {"Remotes", "Events"} do
+                    folder = game.ReplicatedStorage:FindFirstChild(n)
+                    if folder then break end
+                end
+            end
+            if folder then
+                Remote = folder:FindFirstChild("information") or folder:FindFirstChildWhichIsA("RemoteEvent")
+            end
+        end)
+        if Remote then
+            pcall(function() Remote:FireServer("TojiNormal", "UseV") end)
+        end
+    end
+    
+    local function tween(cf)
+        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local dist = (hrp.Position - cf.Position).Magnitude
+            local tween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/400, Enum.EasingStyle.Linear), {CFrame = cf})
+            tween:Play()
+            tween.Completed:Wait()
+        end
+    end
+    
+    local function findBoss()
+        local nearest = nil
+        local bestDist = math.huge
+        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return nil end
+        
+        for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+            if enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                local dist = (hrp.Position - enemy.HumanoidRootPart.Position).Magnitude
+                if dist < bestDist then
+                    bestDist = dist
+                    nearest = enemy
+                end
+            end
+        end
+        return nearest
+    end
+    
+    local function loop()
+        while active do
+            local boss = findBoss()
+            if boss and boss:FindFirstChild("HumanoidRootPart") then
+                tween(boss.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0))
+                task.wait(0.5)
+                fireTojiAura()
+                task.wait(0.3)
+            else
+                task.wait(1)
+            end
+            task.wait(0.1)
+        end
+    end
+    
+    Tab:CreateToggle({
+        Name = "Auto Raid",
+        CurrentValue = false,
+        Callback = function(v)
+            active = v
+            if v and not thread then
+                thread = task.spawn(loop)
+            elseif not v and thread then
+                task.cancel(thread)
+                thread = nil
+            end
+        end
+    })
+    
+    Tab:CreateParagraph({Title = "", Content = "tween to boss and uses toji kill aura"})
+    
+    Tab:CreateToggle({
+        Name = "Speed",
+        CurrentValue = false,
+        Callback = function(v)
+            speedOn = v
+            local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = v and speedVal or 16 end
+        end
+    })
+    
+    Tab:CreateSlider({
+        Name = "Speed Value",
+        Range = {16, 200},
+        Increment = 1,
+        CurrentValue = 50,
+        Callback = function(v)
+            speedVal = v
+            if speedOn then
+                local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum.WalkSpeed = v end
+            end
+        end
+    })
+    
+    game.Players.LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if speedOn then
+            local hum = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = speedVal end
+        end
+    end)
+end
