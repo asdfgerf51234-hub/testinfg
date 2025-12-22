@@ -7,7 +7,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 local Keybinds = {"Z", "X", "C", "V"}
 
 local MainGui = Instance.new("ScreenGui")
-MainGui.Name = "SystemInputHandler"
+MainGui.Name = "InputSystem"
 MainGui.IgnoreGuiInset = true
 MainGui.ResetOnSpawn = false
 MainGui.Parent = PlayerGui
@@ -21,9 +21,7 @@ SelectionFrame.Active = true
 SelectionFrame.Draggable = true
 SelectionFrame.Parent = MainGui
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 6)
-UICorner.Parent = SelectionFrame
+Instance.new("UICorner", SelectionFrame).CornerRadius = UDim.new(0, 6)
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 50)
@@ -34,74 +32,213 @@ Title.Font = Enum.Font.RobotoMono
 Title.TextSize = 18
 Title.Parent = SelectionFrame
 
-local function CreateInterfaceButton(name, pos, color)
+local function CreateButton(name, pos, color)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0, 130, 0, 45)
 	btn.Position = pos
 	btn.BackgroundColor3 = color
-	btn.BorderSizePixel = 0
 	btn.Text = name
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	btn.Font = Enum.Font.RobotoMono
 	btn.TextSize = 16
-	btn.AutoButtonColor = true
 	btn.Parent = SelectionFrame
 	
-	local btnCorner = Instance.new("UICorner")
-	btnCorner.CornerRadius = UDim.new(0, 4)
-	btnCorner.Parent = btn
-	
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 	return btn
 end
 
-local PC_Trigger = CreateInterfaceButton("PC", UDim2.new(0, 20, 0, 70), Color3.fromRGB(45, 45, 45))
-local Mobile_Trigger = CreateInterfaceButton("MOBILE", UDim2.new(0, 170, 0, 70), Color3.fromRGB(30, 80, 180))
+local PCButton = CreateButton("PC", UDim2.new(0, 20, 0, 70), Color3.fromRGB(45, 45, 45))
+local MobileButton = CreateButton("MOBILE", UDim2.new(0, 170, 0, 70), Color3.fromRGB(30, 80, 180))
 
-local function InitMobileOverlay()
+local function CreateMobileOverlay()
 	for i, key in ipairs(Keybinds) do
-		local keyBtn = Instance.new("TextButton")
-		keyBtn.Size = UDim2.new(0, 65, 0, 65)
-		keyBtn.Position = UDim2.new(0.75, (i-1) * 75, 0.6, 0)
-		keyBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-		keyBtn.Text = key
-		keyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		keyBtn.Font = Enum.Font.RobotoMono
-		keyBtn.TextSize = 22
-		keyBtn.Active = true
-		keyBtn.Draggable = true
-		keyBtn.Parent = MainGui
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0, 70, 0, 70)
+		btn.Position = UDim2.new(0.75, (i-1)*80, 0.75, 0)
+		btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+		btn.Text = key
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.TextScaled = true
+		btn.Font = Enum.Font.RobotoMono
+		btn.Active = true
+		btn.Draggable = true
+		btn.Parent = MainGui
 		
-		local kCorner = Instance.new("UICorner")
-		kCorner.CornerRadius = UDim.new(0, 8)
-		kCorner.Parent = keyBtn
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
 		
-		local kStroke = Instance.new("UIStroke")
-		kStroke.Color = Color3.fromRGB(60, 60, 60)
-		kStroke.Parent = keyBtn
-
-		keyBtn.MouseButton1Down:Connect(function()
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(80, 80, 80)
+		stroke.Thickness = 2
+		stroke.Parent = btn
+		
+		btn.MouseButton1Down:Connect(function()
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode[key], false, game)
-			keyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+			btn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
 		end)
-
-		keyBtn.MouseButton1Up:Connect(function()
+		
+		btn.MouseButton1Up:Connect(function()
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode[key], false, game)
-			keyBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+			btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+		end)
+		
+		btn.TouchTap:Connect(function()
+			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode[key], false, game)
+			task.defer(VirtualInputManager.SendKeyEvent, VirtualInputManager, false, Enum.KeyCode[key], false, game)
 		end)
 	end
 end
 
-local function ExecuteEnvironment()
+local function StartMainLoader()
 	SelectionFrame:Destroy()
 	
- 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/asdfgerf51234-hub/testinfg/refs/heads/main/source"))()
-    
+	local MAIN_PLACE_ID = 15694107053
+	local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+	
+	if game.PlaceId == MAIN_PLACE_ID then
+		Rayfield:Notify({Title = "Main Game", Content = "Loading main script...", Duration = 5})
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/asdfgerf51234-hub/testinfg/refs/heads/main/source"))()
+		return
+	end
+	
+	Rayfield:Notify({Title = "Raid Instance", Content = "Loading raid helper...", Duration = 5})
+	
+	local Workspace = game:GetService("Workspace")
+	local TweenService = game:GetService("TweenService")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local lp = Players.LocalPlayer
+	
+	local function GetRemote()
+		local folder = ReplicatedStorage:FindFirstChild("RemoteEvent") or ReplicatedStorage:FindFirstChild("Ability")
+		if not folder then
+			for _, name in {"Remotes", "Events"} do
+				folder = ReplicatedStorage:FindFirstChild(name)
+				if folder then break end
+			end
+		end
+		if not folder then return nil end
+		return folder:FindFirstChild("information") or folder:FindFirstChildWhichIsA("RemoteEvent")
+	end
+	
+	local Remote = GetRemote()
+	
+	local autoToji = false
+	local autoDomain = false
+	local speedEnabled = false
+	local speedValue = 50
+	local tojiThread, domainThread
+	
+	local function FindBoss()
+		local folder = Workspace:FindFirstChild("Enemies") or Workspace
+		for _, obj in folder:GetChildren() do
+			local hum = obj:FindFirstChildOfClass("Humanoid")
+			if hum and hum.Health > 0 and hum.MaxHealth > 5000 then
+				return obj
+			end
+		end
+	end
+	
+	local function TweenTo(part)
+		local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+		if not hrp or not part then return end
+		local distance = (hrp.Position - part.Position).Magnitude
+		local tween = TweenService:Create(hrp, TweenInfo.new(distance / 200, Enum.EasingStyle.Linear), {CFrame = part.CFrame})
+		tween:Play()
+		tween.Completed:Wait()
+	end
+	
+	local function TojiLoop()
+		while autoToji do
+			local boss = FindBoss()
+			if boss and boss:FindFirstChild("HumanoidRootPart") then
+				TweenTo(boss.HumanoidRootPart)
+				task.wait(0.2)
+				if Remote then pcall(Remote.FireServer, Remote, "TojiNormal", "UseV") end
+			end
+			task.wait(0.5)
+		end
+	end
+	
+	local function DomainLoop()
+		while autoDomain do
+			local boss = FindBoss()
+			if boss and boss:FindFirstChild("HumanoidRootPart") then
+				TweenTo(boss.HumanoidRootPart)
+				task.wait(0.2)
+				if Remote then pcall(Remote.FireServer, Remote, "HeianSukunaNew", "UseG") end
+			end
+			task.wait(0.5)
+		end
+	end
+	
+	lp.CharacterAdded:Connect(function(char)
+		task.wait(0.5)
+		if speedEnabled then
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum then hum.WalkSpeed = speedValue end
+		end
+	end)
+	
+	local Window = Rayfield:CreateWindow({Name = "Auto Raid Helper"})
+	local Tab = Window:CreateTab("Main")
+	
+	Tab:CreateToggle({
+		Name = "Auto Raid (Toji Aura)",
+		CurrentValue = false,
+		Callback = function(v)
+			autoToji = v
+			if v and not tojiThread then
+				tojiThread = task.spawn(TojiLoop)
+			elseif not v and tojiThread then
+				task.cancel(tojiThread)
+				tojiThread = nil
+			end
+		end
+	})
+	
+	Tab:CreateToggle({
+		Name = "Auto Raid (Domain)",
+		CurrentValue = false,
+		Callback = function(v)
+			autoDomain = v
+			if v and not domainThread then
+				domainThread = task.spawn(DomainLoop)
+			elseif not v and domainThread then
+				task.cancel(domainThread)
+				domainThread = nil
+			end
+		end
+	})
+	
+	Tab:CreateParagraph({Title = "", Content = "Tweens to boss and spams selected move"})
+	
+	Tab:CreateToggle({
+		Name = "Speed Hack",
+		CurrentValue = false,
+		Callback = function(v)
+			speedEnabled = v
+			local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+			if hum then hum.WalkSpeed = v and speedValue or 16 end
+		end
+	})
+	
+	Tab:CreateSlider({
+		Name = "Speed Value",
+		Range = {16, 200},
+		Increment = 1,
+		CurrentValue = 50,
+		Callback = function(v)
+			speedValue = v
+			if speedEnabled then
+				local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+				if hum then hum.WalkSpeed = v end
+			end
+		end
+	})
 end
 
-PC_Trigger.MouseButton1Click:Connect(ExecuteEnvironment)
+PCButton.MouseButton1Click:Connect(StartMainLoader)
 
-Mobile_Trigger.MouseButton1Click:Connect(function()
-	InitMobileOverlay()
-	ExecuteEnvironment()
+MobileButton.MouseButton1Click:Connect(function()
+	CreateMobileOverlay()
+	StartMainLoader()
 end)
